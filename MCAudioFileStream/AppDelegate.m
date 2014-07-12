@@ -69,7 +69,7 @@
 
 - (void)audioFileStreamReadyToProducePackets:(MCAudioFileStream *)audioFileStream
 {
-    NSLog(@"audio format: bitrate = %ld, duration = %lf.",_audioFileStream.bitRate,_audioFileStream.duration);
+    NSLog(@"audio format: bitrate = %zd, duration = %lf.",_audioFileStream.bitRate,_audioFileStream.duration);
     NSLog(@"audio ready to produce packets.");
 }
 
