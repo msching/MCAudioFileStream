@@ -141,7 +141,6 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     OSStatus status = AudioFileStreamSeek(_audioFileStreamID, seekToPacket, &outDataByteOffset, &ioFlags);
     if (status == noErr && !(ioFlags & kAudioFileStreamSeekFlag_OffsetIsEstimated))
     {
-        //如果AudioFileStreamSeek方法找到了帧的字节偏移，需要修正一下时间
         *time -= ((seekByteOffset - _dataOffset) - outDataByteOffset) * 8.0 / _bitRate;
         seekByteOffset = outDataByteOffset + _dataOffset;
     }
