@@ -4,7 +4,7 @@
 //
 //  Created by Chengyin on 14-7-12.
 //  Copyright (c) 2014年 Chengyin. All rights reserved.
-//
+//  https://github.com/msching/MCAudioFileStream
 
 #import <Foundation/Foundation.h>
 #import <AudioToolbox/AudioToolbox.h>
