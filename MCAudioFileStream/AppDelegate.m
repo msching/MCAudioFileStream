@@ -41,8 +41,7 @@
         if (file)
         {
             NSUInteger lengthPerRead = 10000;
-            unsigned long long fileSize =  [file seekToEndOfFile];
-            [file seekToFileOffset:0];
+            unsigned long long fileSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil] fileSize];
             while (fileSize > 0)
             {
                 NSData *data = [file readDataOfLength:lengthPerRead];
