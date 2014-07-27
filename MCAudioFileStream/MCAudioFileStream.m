@@ -301,7 +301,8 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     {
         SInt64 packetOffset = packetDescriptioins[i].mStartOffset;
         MCParsedAudioData *parsedData = [MCParsedAudioData parsedAudioDataWithBytes:packets + packetOffset
-                                                                  packetDescription:packetDescriptioins[i]];
+                                                                  packetDescription:packetDescriptioins[i]
+                                                    packetDescriptionCreateBySystem:!deletePackDesc];
         
         [parsedDataArray addObject:parsedData];
     }

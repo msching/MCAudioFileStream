@@ -14,5 +14,7 @@
 @property (nonatomic,readonly) NSData *data;
 @property (nonatomic,readonly) AudioStreamPacketDescription packetDescription;
 
-+ (instancetype)parsedAudioDataWithBytes:(const void *)bytes packetDescription:(AudioStreamPacketDescription)packetDescription;
++ (instancetype)parsedAudioDataWithBytes:(const void *)bytes
+                       packetDescription:(AudioStreamPacketDescription)packetDescription
+         packetDescriptionCreateBySystem:(BOOL)packetDescriptionCreateBySystem;
 @end
