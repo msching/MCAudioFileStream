@@ -11,8 +11,8 @@
 
 @interface MCParsedAudioData : NSObject
 
-+ (instancetype)parsedAudioDataWithBytes:(const void *)bytes packetDescription:(AudioStreamPacketDescription)packetDescription;
+@property (nonatomic,readonly) NSData *data;
+@property (nonatomic,readonly) AudioStreamPacketDescription packetDescription;
 
-- (const void *)bytes;
-- (AudioStreamPacketDescription)packetDescription;
++ (instancetype)parsedAudioDataWithBytes:(const void *)bytes packetDescription:(AudioStreamPacketDescription)packetDescription;
 @end

@@ -58,6 +58,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 @synthesize duration = _duration;
 @synthesize bitRate = _bitRate;
 @synthesize format = _format;
+@synthesize maxPacketSize = _maxPacketSize;
 
 #pragma init & dealloc
 - (instancetype)initWithFileType:(AudioFileTypeID)fileType error:(NSError *__autoreleasing *)error
@@ -174,6 +175,14 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     {
         _readyToProducePackets = YES;
         _discontinuous = YES;
+        
+        UInt32 sizeOfUInt32 = sizeof(_maxPacketSize);
+        OSStatus status = AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_PacketSizeUpperBound, &sizeOfUInt32, &_maxPacketSize);
+        if (status != noErr || _maxPacketSize == 0)
+        {
+            status = AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_MaximumPacketSize, &sizeOfUInt32, &_maxPacketSize);
+        }
+        
         [_delegate audioFileStreamReadyToProducePackets:self];
     }
     else if (propertyID == kAudioFileStreamProperty_BitRate)

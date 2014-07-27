@@ -8,15 +8,9 @@
 
 #import "MCParsedAudioData.h"
 
-@interface MCParsedAudioData ()
-{
-@private
-    void *_bytes;
-    AudioStreamPacketDescription _packetDescription;
-}
-@end
-
 @implementation MCParsedAudioData
+@synthesize data = _data;
+@synthesize packetDescription = _packetDescription;
 
 + (instancetype)parsedAudioDataWithBytes:(const void *)bytes packetDescription:(AudioStreamPacketDescription)packetDescription
 {
@@ -33,29 +27,9 @@
     self = [super init];
     if (self)
     {
-        _bytes = (void *)malloc(packetDescription.mDataByteSize);
+        _data = [NSData dataWithBytes:bytes length:packetDescription.mDataByteSize];
         _packetDescription = packetDescription;
-        memcpy(_bytes, bytes, packetDescription.mDataByteSize);
     }
     return self;
-}
-
-- (AudioStreamPacketDescription)packetDescription
-{
-    return _packetDescription;
-}
-
-- (const void *)bytes
-{
-    return _bytes;
-}
-
-- (void)dealloc
-{
-    if (_bytes != NULL)
-    {
-        free(_bytes);
-        _bytes = NULL;
-    }
 }
 @end
