@@ -14,7 +14,6 @@
     BOOL _discontinuous;
     
     AudioFileStreamID _audioFileStreamID;
-    AudioStreamBasicDescription _asbd;
     
     SInt64 _dataOffset;
     UInt64 _audioDataByteCount;
@@ -58,6 +57,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 @synthesize delegate = _delegate;
 @synthesize duration = _duration;
 @synthesize bitRate = _bitRate;
+@synthesize format = _format;
 
 #pragma init & dealloc
 - (instancetype)initWithFileType:(AudioFileTypeID)fileType error:(NSError *__autoreleasing *)error
@@ -162,9 +162,9 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 
 - (void)calculatepPacketDuration
 {
-    if (_asbd.mSampleRate > 0)
+    if (_format.mSampleRate > 0)
     {
-        _packetDuration = _asbd.mFramesPerPacket / _asbd.mSampleRate;
+        _packetDuration = _format.mFramesPerPacket / _format.mSampleRate;
     }
 }
 
@@ -195,8 +195,8 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     }
     else if (propertyID == kAudioFileStreamProperty_DataFormat)
     {
-        UInt32 asbdSize = sizeof(_asbd);
-        AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_DataFormat, &asbdSize, &_asbd);
+        UInt32 asbdSize = sizeof(_format);
+        AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_DataFormat, &asbdSize, &_format);
         [self calculatepPacketDuration];
     }
     else if (propertyID == kAudioFileStreamProperty_FormatList)
@@ -216,7 +216,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
                     if (pasbd.mFormatID == kAudioFormatMPEG4AAC_HE ||
                         pasbd.mFormatID == kAudioFormatMPEG4AAC_HE_V2)
                     {
-                        _asbd = pasbd;
+                        _format = pasbd;
                         [self calculatepPacketDuration];
                         break;
                     }

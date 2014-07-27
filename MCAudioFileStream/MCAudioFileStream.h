@@ -24,6 +24,7 @@
 @property (nonatomic,assign,readonly) BOOL readyToProducePackets;
 @property (nonatomic,weak) id<MCAudioFileStreamDelegate> delegate;
 
+@property (nonatomic,assign,readonly) AudioStreamBasicDescription format;
 @property (nonatomic,assign,readonly) NSTimeInterval duration;
 @property (nonatomic,assign,readonly) UInt32 bitRate;
 
