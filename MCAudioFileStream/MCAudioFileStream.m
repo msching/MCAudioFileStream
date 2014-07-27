@@ -210,17 +210,38 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
             OSStatus status = AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_FormatList, &formatListSize, formatList);
             if (status == noErr)
             {
+                UInt32 supportedFormatsSize;
+                status = AudioFormatGetPropertyInfo(kAudioFormatProperty_DecodeFormatIDs, 0, NULL, &supportedFormatsSize);
+                if (status != noErr)
+                {
+                    free(formatList);
+                    return;
+                }
+                
+                UInt32 supportedFormatCount = supportedFormatsSize / sizeof(OSType);
+                OSType *supportedFormats = (OSType *)malloc(supportedFormatsSize);
+                status = AudioFormatGetProperty(kAudioFormatProperty_DecodeFormatIDs, 0, NULL, &supportedFormatCount, supportedFormats);
+                if (status != noErr)
+                {
+                    free(formatList);
+                    free(supportedFormats);
+                    return;
+                }
+                
                 for (int i = 0; i * sizeof(AudioFormatListItem) < formatListSize; i += sizeof(AudioFormatListItem))
                 {
-                    AudioStreamBasicDescription pasbd = formatList[i].mASBD;
-                    if (pasbd.mFormatID == kAudioFormatMPEG4AAC_HE ||
-                        pasbd.mFormatID == kAudioFormatMPEG4AAC_HE_V2)
+                    AudioStreamBasicDescription format = formatList[i].mASBD;
+                    for (UInt32 j = 0; j < supportedFormatCount; ++j)
                     {
-                        _format = pasbd;
-                        [self calculatepPacketDuration];
-                        break;
+                        if (format.mFormatID == supportedFormats[j])
+                        {
+                            _format = format;
+                            [self calculatepPacketDuration];
+                            break;
+                        }
                     }
                 }
+                free(supportedFormats);
             }
             free(formatList);
         }
