@@ -60,7 +60,7 @@
             [_audioFileStream close];
             _audioFileStream = nil;
             NSLog(@"audio file closed.");
-            [file class];
+            [file closeFile];
         }
     }
     
