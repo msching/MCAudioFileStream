@@ -13,8 +13,9 @@
 @class MCAudioFileStream;
 @protocol MCAudioFileStreamDelegate <NSObject>
 @required
-- (void)audioFileStreamReadyToProducePackets:(MCAudioFileStream *)audioFileStream;
 - (void)audioFileStream:(MCAudioFileStream *)audioFileStream audioDataParsed:(NSArray *)audioData;
+@optional
+- (void)audioFileStreamReadyToProducePackets:(MCAudioFileStream *)audioFileStream;
 @end
 
 @interface MCAudioFileStream : NSObject
@@ -24,13 +25,14 @@
 @property (nonatomic,assign,readonly) BOOL readyToProducePackets;
 @property (nonatomic,weak) id<MCAudioFileStreamDelegate> delegate;
 
-/* Folloing properties are not avalilable until audioFileStreamReadyToProducePackets is called */
 @property (nonatomic,assign,readonly) AudioStreamBasicDescription format;
+@property (nonatomic,assign,readonly) unsigned long long fileSize;
 @property (nonatomic,assign,readonly) NSTimeInterval duration;
 @property (nonatomic,assign,readonly) UInt32 bitRate;
 @property (nonatomic,assign,readonly) UInt32 maxPacketSize;
+@property (nonatomic,assign,readonly) UInt64 audioDataByteCount;
 
-- (instancetype)initWithFileType:(AudioFileTypeID)fileType error:(NSError **)error;
+- (instancetype)initWithFileType:(AudioFileTypeID)fileType fileSize:(unsigned long long)fileSize error:(NSError **)error;
 
 - (BOOL)parseData:(NSData *)data error:(NSError **)error;
 

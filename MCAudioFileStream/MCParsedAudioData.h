@@ -15,6 +15,5 @@
 @property (nonatomic,readonly) AudioStreamPacketDescription packetDescription;
 
 + (instancetype)parsedAudioDataWithBytes:(const void *)bytes
-                       packetDescription:(AudioStreamPacketDescription)packetDescription
-         packetDescriptionCreateBySystem:(BOOL)packetDescriptionCreateBySystem;
+                       packetDescription:(AudioStreamPacketDescription)packetDescription;
 @end

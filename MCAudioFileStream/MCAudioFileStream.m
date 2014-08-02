@@ -8,6 +8,9 @@
 
 #import "MCAudioFileStream.h"
 
+#define BitRateEstimationMaxPackets 5000
+#define BitRateEstimationMinPackets 50
+
 @interface MCAudioFileStream ()
 {
 @private
@@ -16,8 +19,10 @@
     AudioFileStreamID _audioFileStreamID;
     
     SInt64 _dataOffset;
-    UInt64 _audioDataByteCount;
     NSTimeInterval _packetDuration;
+    
+    UInt64 _processedPacketsCount;
+	UInt64 _processedPacketsSizeTotal;
 }
 - (void)handleAudioFileStreamProperty:(AudioFileStreamPropertyID)propertyID;
 - (void)handleAudioFileStreamPackets:(const void *)packets
@@ -59,15 +64,17 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 @synthesize bitRate = _bitRate;
 @synthesize format = _format;
 @synthesize maxPacketSize = _maxPacketSize;
+@synthesize audioDataByteCount = _audioDataByteCount;
 
 #pragma init & dealloc
-- (instancetype)initWithFileType:(AudioFileTypeID)fileType error:(NSError *__autoreleasing *)error
+- (instancetype)initWithFileType:(AudioFileTypeID)fileType fileSize:(unsigned long long)fileSize error:(NSError **)error
 {
     self  = [super init];
     if (self)
     {
         _discontinuous = NO;
         _fileType = fileType;
+        _fileSize = fileSize;
         [self _openAudioFileStreamWithFileTypeHint:_fileType error:error];
     }
     return self;
@@ -78,13 +85,12 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     [self _closeAudioFileStream];
 }
 
-- (NSError *)_errorForOSStatus:(OSStatus)status
+- (void)_errorForOSStatus:(OSStatus)status error:(NSError *__autoreleasing *)outError
 {
-    if (status != noErr)
+    if (status != noErr && outError != NULL)
     {
-        return [NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:nil];
+        *outError = [NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:nil];
     }
-    return nil;
 }
 
 #pragma mark - open & close
@@ -100,10 +106,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     {
         _audioFileStreamID = NULL;
     }
-    if (error != NULL)
-    {
-        *error = [self _errorForOSStatus:status];
-    }
+    [self _errorForOSStatus:status error:error];
     return status == noErr;
 }
 
@@ -130,10 +133,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 - (BOOL)parseData:(NSData *)data error:(NSError **)error
 {
     OSStatus status = AudioFileStreamParseBytes(_audioFileStreamID,(UInt32)[data length],[data bytes],_discontinuous ? kAudioFileStreamParseFlag_Discontinuity : 0);
-    if (error != NULL)
-    {
-        *error = [self _errorForOSStatus:status];
-    }
+    [self _errorForOSStatus:status error:error];
     return status == noErr;
 }
 
@@ -159,11 +159,20 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 }
 
 #pragma mark - callbacks
+- (void)calculateBitRate
+{
+    if (_packetDuration && _processedPacketsCount > BitRateEstimationMinPackets && _processedPacketsCount <= BitRateEstimationMaxPackets)
+    {
+        double averagePacketByteSize = _processedPacketsSizeTotal / _processedPacketsCount;
+        _bitRate = 8.0 * averagePacketByteSize / _packetDuration;
+    }
+}
+
 - (void)calculateDuration
 {
-    if (_audioDataByteCount > 0 && _bitRate > 0)
+    if (_fileSize > 0 && _bitRate > 0)
     {
-        _duration = (_audioDataByteCount * 8) / _bitRate;
+        _duration = ((_fileSize - _dataOffset) * 8) / _bitRate;
     }
 }
 
@@ -189,23 +198,16 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
             status = AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_MaximumPacketSize, &sizeOfUInt32, &_maxPacketSize);
         }
         
-        [_delegate audioFileStreamReadyToProducePackets:self];
-    }
-    else if (propertyID == kAudioFileStreamProperty_BitRate)
-    {
-        UInt32 bitRateSize = sizeof(_bitRate);
-        AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_BitRate, &bitRateSize, &_bitRate);
-        [self calculateDuration];
+        if (_delegate && [_delegate respondsToSelector:@selector(audioFileStreamReadyToProducePackets:)])
+        {
+            [_delegate audioFileStreamReadyToProducePackets:self];
+        }
     }
     else if (propertyID == kAudioFileStreamProperty_DataOffset)
     {
         UInt32 offsetSize = sizeof(_dataOffset);
         AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_DataOffset, &offsetSize, &_dataOffset);
-    }
-    else if (propertyID == kAudioFileStreamProperty_AudioDataByteCount)
-    {
-        UInt32 byteCountSize = sizeof(_audioDataByteCount);
-        AudioFileStreamGetProperty(_audioFileStreamID, kAudioFileStreamProperty_AudioDataByteCount, &byteCountSize, &_audioDataByteCount);
+        _audioDataByteCount = _fileSize - _dataOffset;
         [self calculateDuration];
     }
     else if (propertyID == kAudioFileStreamProperty_DataFormat)
@@ -307,10 +309,17 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     {
         SInt64 packetOffset = packetDescriptioins[i].mStartOffset;
         MCParsedAudioData *parsedData = [MCParsedAudioData parsedAudioDataWithBytes:packets + packetOffset
-                                                                  packetDescription:packetDescriptioins[i]
-                                                    packetDescriptionCreateBySystem:!deletePackDesc];
+                                                                  packetDescription:packetDescriptioins[i]];
         
         [parsedDataArray addObject:parsedData];
+        
+        if (_processedPacketsCount < BitRateEstimationMaxPackets)
+        {
+            _processedPacketsSizeTotal += parsedData.packetDescription.mDataByteSize;
+            _processedPacketsCount += 1;
+            [self calculateBitRate];
+            [self calculateDuration];
+        }
     }
     
     [_delegate audioFileStream:self audioDataParsed:parsedDataArray];

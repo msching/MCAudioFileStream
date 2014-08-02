@@ -14,14 +14,12 @@
 
 + (instancetype)parsedAudioDataWithBytes:(const void *)bytes
                        packetDescription:(AudioStreamPacketDescription)packetDescription
-         packetDescriptionCreateBySystem:(BOOL)packetDescriptionCreateBySystem
 {
     return [[[self class] alloc] initWithBytes:bytes
-                             packetDescription:packetDescription
-               packetDescriptionCreateBySystem:packetDescriptionCreateBySystem];
+                             packetDescription:packetDescription];
 }
 
-- (instancetype)initWithBytes:(const void *)bytes packetDescription:(AudioStreamPacketDescription)packetDescription packetDescriptionCreateBySystem:(BOOL)packetDescriptionCreateBySystem
+- (instancetype)initWithBytes:(const void *)bytes packetDescription:(AudioStreamPacketDescription)packetDescription
 {
     if (bytes == NULL || packetDescription.mDataByteSize == 0)
     {
@@ -32,10 +30,7 @@
     if (self)
     {
         _data = [NSData dataWithBytes:bytes length:packetDescription.mDataByteSize];
-        if (packetDescriptionCreateBySystem)
-        {
-            _packetDescription = packetDescription;
-        }
+        _packetDescription = packetDescription;
     }
     return self;
 }
