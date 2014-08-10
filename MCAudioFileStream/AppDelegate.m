@@ -25,8 +25,11 @@
     self.window.backgroundColor = [UIColor whiteColor];
     [self.window makeKeyAndVisible];
     
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"MP3Sample" ofType:@"mp3"];
+    NSFileHandle *file = [NSFileHandle fileHandleForReadingAtPath:path];
+    unsigned long long fileSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil] fileSize];
     NSError *error = nil;
-    _audioFileStream = [[MCAudioFileStream alloc] initWithFileType:kAudioFileMP3Type error:&error];
+    _audioFileStream = [[MCAudioFileStream alloc] initWithFileType:kAudioFileMP3Type fileSize:fileSize error:&error];
     _audioFileStream.delegate = self;
     if (error)
     {
@@ -36,12 +39,9 @@
     else
     {
         NSLog(@"audio file opened.");
-        NSString *path = [[NSBundle mainBundle] pathForResource:@"MP3Sample" ofType:@"mp3"];
-        NSFileHandle *file = [NSFileHandle fileHandleForReadingAtPath:path];
         if (file)
         {
             NSUInteger lengthPerRead = 10000;
-            unsigned long long fileSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil] fileSize];
             while (fileSize > 0)
             {
                 NSData *data = [file readDataOfLength:lengthPerRead];
