@@ -9,7 +9,7 @@
 #import "MCAudioFileStream.h"
 
 #define BitRateEstimationMaxPackets 5000
-#define BitRateEstimationMinPackets 50
+#define BitRateEstimationMinPackets 10
 
 @interface MCAudioFileStream ()
 {
@@ -37,7 +37,7 @@ static void MCSAudioFileStreamPropertyListener(void *inClientData,
                                                AudioFileStreamPropertyID inPropertyID,
                                                UInt32 *ioFlags)
 {
-    __unsafe_unretained MCAudioFileStream *audioFileStream = (__bridge MCAudioFileStream *)inClientData;
+    MCAudioFileStream *audioFileStream = (__bridge MCAudioFileStream *)inClientData;
     [audioFileStream handleAudioFileStreamProperty:inPropertyID];
 }
 
@@ -47,7 +47,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
                                              const void *inInputData,
                                              AudioStreamPacketDescription *inPacketDescriptions)
 {
-    __unsafe_unretained MCAudioFileStream *audioFileStream = (__bridge MCAudioFileStream *)inClientData;
+    MCAudioFileStream *audioFileStream = (__bridge MCAudioFileStream *)inClientData;
     [audioFileStream handleAudioFileStreamPackets:inInputData
                                     numberOfBytes:inNumberBytes
                                   numberOfPackets:inNumberPackets
@@ -155,6 +155,11 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 
 - (BOOL)parseData:(NSData *)data error:(NSError **)error
 {
+    if (self.readyToProducePackets && _packetDuration == 0)
+    {
+        [self _errorForOSStatus:-1 error:error];
+        return NO;
+    }
     OSStatus status = AudioFileStreamParseBytes(_audioFileStreamID,(UInt32)[data length],[data bytes],_discontinuous ? kAudioFileStreamParseFlag_Discontinuity : 0);
     [self _errorForOSStatus:status error:error];
     return status == noErr;
@@ -162,7 +167,6 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 
 - (SInt64)seekToTime:(NSTimeInterval *)time
 {
-    _discontinuous = YES;
     SInt64 approximateSeekOffset = _dataOffset + (*time / _duration) * _audioDataByteCount;
     SInt64 seekToPacket = floor(*time / _packetDuration);
     SInt64 seekByteOffset;
@@ -171,11 +175,12 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
     OSStatus status = AudioFileStreamSeek(_audioFileStreamID, seekToPacket, &outDataByteOffset, &ioFlags);
     if (status == noErr && !(ioFlags & kAudioFileStreamSeekFlag_OffsetIsEstimated))
     {
-        *time -= ((seekByteOffset - _dataOffset) - outDataByteOffset) * 8.0 / _bitRate;
+        *time -= ((approximateSeekOffset - _dataOffset) - outDataByteOffset) * 8.0 / _bitRate;
         seekByteOffset = outDataByteOffset + _dataOffset;
     }
     else
     {
+        _discontinuous = YES;
         seekByteOffset = approximateSeekOffset;
     }
     return seekByteOffset;
@@ -195,7 +200,7 @@ static void MCAudioFileStreamPacketsCallBack(void *inClientData,
 {
     if (_fileSize > 0 && _bitRate > 0)
     {
-        _duration = ((_fileSize - _dataOffset) * 8) / _bitRate;
+        _duration = ((_fileSize - _dataOffset) * 8.0) / _bitRate;
     }
 }
 
