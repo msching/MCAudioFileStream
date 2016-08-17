@@ -57,6 +57,7 @@
                     break;
                 }
             }
+            NSLog(@"audio format: bitrate = %zd, duration = %lf.",_audioFileStream.bitRate,_audioFileStream.duration);
             [_audioFileStream close];
             _audioFileStream = nil;
             NSLog(@"audio file closed.");
@@ -69,7 +70,6 @@
 
 - (void)audioFileStreamReadyToProducePackets:(MCAudioFileStream *)audioFileStream
 {
-    NSLog(@"audio format: bitrate = %zd, duration = %lf.",_audioFileStream.bitRate,_audioFileStream.duration);
     NSLog(@"audio ready to produce packets.");
 }
 
